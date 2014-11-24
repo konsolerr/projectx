@@ -1,0 +1,4 @@
+virtualenv
+python3.4-dev
+postgresql-9.3
+postgresql-server-9.3
