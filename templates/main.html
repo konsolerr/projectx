@@ -1,6 +1,6 @@
 {% load staticfiles i18n %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" ng-app="projectApp">
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -14,8 +14,10 @@
     <script src='{% static 'js/opencpu.js' %}'></script>
     <script src='{% static "js/bootstrap.min.js" %}'></script>
     <script src='{% static "js/bootstrap-file-input.js" %}'></script>
-    <script src='{% static "js/main.js" %}'></script>
-
+{#    <script src='{% static "js/main.js" %}'></script>#}
+    <script src="{% static "js/angular/angular.js" %}"></script>
+    <script src="{% static "js/underscore/underscore.js" %}"></script>
+      <script src="{% static "js/controllers.js" %}"></script>
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
@@ -23,33 +25,62 @@
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
   </head>
-  <body>
+  <body ng-controller="DatasetController">
     <div class="container-fluid">
-      <h2 style="padding-left:16px">Many inputs test</h2>
       <div class="row-fluid">
         <div class="col-md-12">
-          <form class="well">
-                <p>Current data set: x = <code id="data-set"></code></p>
-                <button type="button" class="btn btn-sm btn-primary" id="get-new-data-set">Get dataset (rnorm)</button>
-                <input type="file" id="file-csv" title="Or upload scv" class="btn-primary btn-sm">
+            <h2 style="padding-left:16px">Many inputs test</h2>
+        <button type="button" class="btn btn-primary" style="margin-left: 15px" ng-click="addNewDataset()">Add new dataset</button>
+            <hr>
+          <form class="well" ng-repeat="dataset in datasets">
+                <p>Current data set: x = <code>{[ niceDataset(dataset.dataset) ]}</code></p>
+                <button type="button" class="btn btn-sm btn-primary" ng-click="getNormDataset($index)">Get dataset (rnorm)</button>
+                <button type="button" class="btn btn-sm btn-primary"
+                        ng-click="createCutDataset($index)"
+                        ng-disabled="dataset.toCutStart > dataset.toCutEnd">
+                    Cut new dataset
+                </button>
+                <div class="form-group col-md-2"><input type="number" class="form-control" ng-model="dataset.toCutStart"
+                        max="dataset.dataset.length" min="1"></div>
+                <div class="form-group col-md-2"><input type="number" class="form-control" ng-model="dataset.toCutEnd"
+                        max="{[dataset.dataset.length]}" min="1"></div>
                 <hr>
                 <div id="functions">
                   <div class="row">
                       <div class="col-md-8">
                        <div class="input-groups">
-                           <div class="row">
-
+                           <div class="row" ng-repeat="input in dataset.inputs">
+                                <div class="row no-margin-row" id="ig" style="margin-left: 0px">
+                                    <div class="form-group col-md-2">
+                                        <button class="btn btn-default remove-btn" type="button"
+                                                ng-click="removeInput($parent.$index, $index)">Remove</button>
+                                    </div>
+                                    <div class="form-group col-md-4">
+                                        <select class="form-control"
+                                                ng-model="input.fun"
+                                                ng-options="fun[3] for fun in vectorFunctions"
+                                                ng-change="input.args={}; calculate($parent.$index, $index)">
+                                        </select>
+                                    </div>
+                                    <div ng-repeat="arg in input.fun[4]" class="form-group col-md-2">
+                                        <input type="text" placeholder="{[arg]}" class="form-control" ng-model="input.args[arg]"
+                                                ng-change="calculate($parent.$parent.$index, $parent.$index)">
+                                    </div>
+                                </div>
                            </div>
                        </div>
                    </div>
                     <div class="col-md-4">
                         <div id="results">
-                            
+                            <div class="row" ng-repeat="result in dataset.results">
+                                <div class="input-group"><input type="text" class="form-control" disabled="disabled"
+                                                                 ng-model="result.result"></div>
+                           </div>
                         </div>
                     </div>
                   </div>
                    
-                    <button type="button" class="btn btn-primary" id="add-button">Add</button>
+                    <button type="button" class="btn btn-primary" ng-click="addInput($index)">Add</button>
               </div>
           </form>
         </div>
