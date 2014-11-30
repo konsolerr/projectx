@@ -1,15 +1,11 @@
 /**
- * Created by askmebefore on 25.11.14.
+ * Created by askmebefore on 30.11.14.
  */
-var projectApp = angular.module('projectApp', []);
-projectApp.config(function($interpolateProvider) {
-  $interpolateProvider.startSymbol('{[');
-  $interpolateProvider.endSymbol(']}');
-});
-
-projectApp.controller('DatasetController', function ($scope, $http) {
-    $scope.vectorFunctions = [];
-    $http.get('/projectx/get-vector-functions/').success(function(data){
+angular.module('projectx').controller(
+    'DatasetController',
+    function ($scope, $http) {
+        $scope.vectorFunctions = [];
+        $http.get('/projectx/get-vector-functions/').success(function(data){
         var funs = []
         for (var key in data) {
             var tt = [key];

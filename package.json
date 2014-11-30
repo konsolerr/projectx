@@ -1,0 +1,23 @@
+{
+  "name": "projectx",
+  "version": "0.1.0",
+  "description": "analysys without R",
+  "main": "frontend/app/app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/konsolerr/projectx.git"
+  },
+  "author": "konsolerr <zayats1812@gmail.com>",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/konsolerr/projectx/issues"
+  },
+  "devDependencies": {
+    "grunt": "~0.4.5",
+    "grunt-contrib-concat": "~0.5.0",
+    "grunt-contrib-copy": "~0.7.0"
+  }
+}
