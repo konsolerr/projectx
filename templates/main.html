@@ -27,17 +27,16 @@
         <button type="button" class="btn btn-primary" style="margin-left: 15px" ng-click="addNewDataset()">Add new dataset</button>
             <hr>
           <form class="well" ng-repeat="dataset in datasets">
-                <p>Current data set: x = <code>{[ niceDataset(dataset.dataset) ]}</code></p>
-                <button type="button" class="btn btn-sm btn-primary" ng-click="getNormDataset($index)">Get dataset (rnorm)</button>
+                <p ng-bind-html="dataset.html"></p>
                 <button type="button" class="btn btn-sm btn-primary"
                         ng-click="createCutDataset($index)"
                         ng-disabled="dataset.toCutStart > dataset.toCutEnd">
                     Cut new dataset
                 </button>
                 <div class="form-group col-md-2"><input type="number" class="form-control" ng-model="dataset.toCutStart"
-                        max="dataset.dataset.length" min="1"></div>
+                                                        min="1"></div>
                 <div class="form-group col-md-2"><input type="number" class="form-control" ng-model="dataset.toCutEnd"
-                        max="{[dataset.dataset.length]}" min="1"></div>
+                                                        min="1"></div>
                 <hr>
                 <div id="functions">
                   <div class="row">
@@ -67,8 +66,7 @@
                     <div class="col-md-4">
                         <div id="results">
                             <div class="row" ng-repeat="result in dataset.results">
-                                <div class="input-group"><input type="text" class="form-control" disabled="disabled"
-                                                                 ng-model="result.result"></div>
+                                <div ng-bind-html="result.result.html"></div>
                            </div>
                         </div>
                     </div>

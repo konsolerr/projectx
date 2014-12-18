@@ -3,42 +3,41 @@
  */
 angular.module('projectx').controller(
     'DatasetController',
-    function ($scope, $http) {
-        $scope.vectorFunctions = [];
-        $http.get('/projectx/get-vector-functions/').success(function(data){
-        var funs = []
+    function ($scope, $http, $sce) {
+    $scope.vectorFunctions = [];
+    $http.get('/projectx/get-vector-functions/').success(function(data){
+        var funs = [];
         for (var key in data) {
             var tt = [key];
             tt.push.apply(tt, data[key]);
-            tt[4] = tt[4].slice(1);
             funs.push(tt)
         };
         $scope.vectorFunctions = funs;
     });
 
-    $scope.datasets = [
-        {
-            dataset: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            inputs: [],
-            results: [],
-            toCutStart: 1,
-            toCutEnd: 10
-        }
-    ];
-
-    $scope.addNewDataset = function(dataset, inputs, results) {
-        var dataset = dataset || [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-        var inputs = inputs || [];
-        var results = results || [];
-        $scope.datasets.push({
-            dataset: dataset,
-            inputs: inputs,
-            results: results,
-            toCutStart: 1,
-            toCutEnd: dataset.length
-        });
+    var addDataSet = function(data, inputs, results){
+        console.log(data);
+        $scope.datasets.push(
+            {
+                key: data['key'],
+                html: $sce.trustAsHtml(data['html'][0]),
+                inputs: inputs || [],
+                results: results || [],
+                toCutStart: 1,
+                toCutEnd: 10
+            }
+        );
         $scope.calculateDataset($scope.datasets.length - 1);
+
     };
+    $scope.datasets = [];
+    $scope.addNewDataset = function() {
+        $http.get('/projectx/get-new-dataset/').success(function(data){
+            addDataSet(data);
+        });
+    };
+    $scope.addNewDataset();
+
     $scope.addInput = function(id) {
         $scope.datasets[id].inputs.push(
             {
@@ -59,22 +58,26 @@ angular.module('projectx').controller(
         var dataset = $scope.datasets[datasetId];
         var data = dataset.dataset;
         var args = dataset.inputs[inputId].args;
-        var valid_args = {x: data};
+        var valid_args = {};
         for (key in args) {
             if (args[key] != "") {
                 valid_args[key] = parseFloat(args[key]);
             }
         }
-        var url = '/projectx/exec-json/' + dataset.inputs[inputId].fun[0] + '/';
+        var url = '/projectx/op/' + dataset.key + '/' + dataset.inputs[inputId].fun[0] + '/';
         req = {
             url: url,
-            method: 'POST',
-            data: 'data=' + JSON.stringify(valid_args),
+            method: 'GET',
+            params: valid_args,
             headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}
         };
         $http(req).success(
             function(data){
-                dataset.results[inputId].result = data[0];
+                console.log(data);
+                dataset.results[inputId].result = {
+                    'html': $sce.trustAsHtml(data['html'][0]),
+                    'key': data['key']
+                };
             }
         )
     };
@@ -85,34 +88,11 @@ angular.module('projectx').controller(
         }
     };
 
-    $scope.getNormDataset = function(datasetId) {
-        var url = '/projectx/exec-json/rnorm/';
-        req = {
-            url: url,
-            method: 'POST',
-            data: 'data=' + JSON.stringify({n: 100}),
-            headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}
-        };
-        $http(req).success(
-            function(data){
-                $scope.datasets[datasetId].dataset = data;
-                $scope.datasets[datasetId].toCutStart = 1;
-                $scope.datasets[datasetId].toCutEnd = data.length;
-                $scope.calculateDataset(datasetId);
-            }
-        )
-    }
-
-    $scope.niceDataset = function(dataset) {
-        var dataset = dataset.toString();
-        return dataset.replace(/,/g, ', ');
-    };
 
     $scope.createCutDataset = function(datasetId) {
         var dataset = $scope.datasets[datasetId];
         var startIndex = dataset.toCutStart;
         var endIndex = dataset.toCutEnd;
-        var data = dataset.dataset.slice(startIndex - 1, endIndex);
         //THIS COPY IS SO DIRTY
         var inputs = [];
         for (var i = 0; i < dataset.inputs.length; i++) {
@@ -122,6 +102,18 @@ angular.module('projectx').controller(
             })
         }
         var results = JSON.parse(JSON.stringify(dataset.results));
-        $scope.addNewDataset(data, inputs, results);
+        console.log(dataset.key);
+        var req = {
+            method: 'GET',
+            params: {
+                'start': startIndex,
+                'end': endIndex
+            },
+            url: '/projectx/op/' + dataset.key + '/cut/'
+        };
+        console.log(req.url);
+        $http(req).success(function(data){
+            addDataSet(data, inputs, results);
+        });
     };
 });

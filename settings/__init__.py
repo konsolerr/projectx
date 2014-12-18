@@ -93,6 +93,8 @@ TEMPLATE_DIRS = (
     here('..', 'templates'),
 )
 
+OPENCPU_DOMAIN = '127.0.1.1'
+
 try:
     from settings.local_settings import *
 except ImportError:
