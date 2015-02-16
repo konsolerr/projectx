@@ -24,8 +24,34 @@
       <div class="row-fluid">
         <div class="col-md-12">
             <h2 style="padding-left:16px">Many inputs test</h2>
-        <button type="button" class="btn btn-primary" style="margin-left: 15px" ng-click="addNewDataset()">Add new dataset</button>
+            <div class="input-group">
+                <select class="form-control" 
+                    ng-model="current_dataset_creation" 
+                    ng-options="v.name[0] for (k, v) in datasets">
+                </select>
+                <span class="input-group-btn">
+                    <button type="button" class="btn btn-primary" ng-click="create_dataset()">Add new dataset</button>
+                </span>
+            </div>
+            <form class="form-horizontal" name="creation_form">
+                <input class="form-control" ng-repeat="(k, v) in current_dataset_creation.real_constructor.args"
+                    name="{[v.name[0]]}"
+                    type="{[getType(v.type[0])]}"
+                    placeholder="{[v.description[0]]}" id="{[v.name[0]]}">
+            </form>
             <hr>
+            <div class="well" ng-repeat="data in datas">
+                <p ng-bind-html="data.html"></p>
+                <form class="form-horizontal" ng-repeat="(name, method) in data.dataset.real_methods" name="{[name]}">
+                    <input class="form-control" ng-repeat="(k, v) in method.args"
+                        name="{[v.name[0]]}"
+                        type="{[getType(v.type[0])]}"
+                        placeholder="{[v.description[0]]}" id="{[v.name[0]]}">
+                    <button class="btn btn-default" ng-click="submit(name, $index)">{[name]}</button>
+                </form>
+                <div ng-repeat="result in data.results" ng-bind-html="result.html"></div>
+            </div>
+<!--
           <form class="well" ng-repeat="dataset in datasets">
                 <p ng-bind-html="dataset.html"></p>
                 <button type="button" class="btn btn-sm btn-primary"
@@ -75,6 +101,7 @@
                     <button type="button" class="btn btn-primary" ng-click="addInput($index)">Add</button>
               </div>
           </form>
+-->
         </div>
 <!--
         <div class="col-md-6">

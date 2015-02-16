@@ -16,6 +16,10 @@ def make_query(library, fun, *args, **kwargs):
     response = requests.post(url, data=kwargs)
     return parse_response(response.text)
 
+def make_data_query(library, data, *args, **kwargs):
+    url = 'http://%s/ocpu/library/%s/data/%s/json' % (settings.OPENCPU_DOMAIN, library, data)
+    response = requests.get(url)
+    return response.json()
 
 def parse_response(text):
     lines = text.split("\n")
@@ -26,21 +30,20 @@ def parse_response(text):
     return OpenCPUSessionObject(key, lines)
 
 
-def make_ocpu_query(url, data=None, headers=None):
-    data = data | {}
-    headers = headers | {'Content-Type': 'application/json'}
-    response = requests.post(url, data=data, headers=headers)
+def make_ocpu_query(url, data=None, files=None):
+    response = requests.post(url, data=data, files=files)
     return parse_response(response.text)
 
 
 class OpenCPUSessionObject(object):
-    def __init__(self, key, keys=None):
+    def __init__(self, key, keys=None, package="testPackage"):
         self.key = key
         if keys is None:
             url = 'http://%s/ocpu/tmp/%s/' % (settings.OPENCPU_DOMAIN, self.key)
             lines = requests.get(url).text.split("\n")
             keys = filter(lambda x: x, lines)
         self.keys = keys
+        self.package = package
 
     def get_value(self):
         val_string = 'R/.val'
@@ -51,7 +54,7 @@ class OpenCPUSessionObject(object):
         return response.json()
 
     def show_knit(self):
-        return make_query('testPackage', 'showKnit', obj=self.key)
+        return make_query(self.package, 'showKnit', obj=self.key)
 
     def __str__(self):
         return "%s - %s" % (self.key, str(self.keys))
