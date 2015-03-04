@@ -9,8 +9,8 @@ GeneExpressionDataSet <- setRefClass(
 	"GeneExpressionDataSet",
 	fields = list(
 		exp = "matrix",
-        log_scale = "boolean",
-        normalize = "boolean"
+        log_scale = "logical",
+        normalize = "logical"
 	),
 	methods = list(
 		initialize = function(exp, log_scale, normalize) {
@@ -72,10 +72,10 @@ configure_construct_gene_exp_exec <- function(exp_file) {
 
 construct_gene_exp_exec <- function(exp_file, log_scale=NULL, normalize=NULL) {
 	prediction <- configure_construct_gene_exp_exec(exp_file)
-    if (!is.null(log_scale) && !(log_scale == prediction$log_scale) print("wrong prediction log_scale") #SOME LOGGING HERE
-    if (is.null(log_scale) log_scale = prediction$log_scale
-    if (!is.null(normalize) && !(normalize == prediction$normalize) print("wrong prediction normalize") #SOME LOGGING HERE
-    if (is.null(normalize) normalize = prediction$normalize   
+    if (!is.null(log_scale) && !(log_scale == prediction$log_scale)) print("wrong prediction log_scale") #SOME LOGGING HERE
+    if (is.null(log_scale)) log_scale = prediction$log_scale
+    if (!is.null(normalize) && !(normalize == prediction$normalize)) print("wrong prediction normalize") #SOME LOGGING HERE
+    if (is.null(normalize)) normalize = prediction$normalize   
 
     exp <- as.matrix(read.table(file, header=1, row.names=1))
     if (log_scale) {
@@ -93,8 +93,8 @@ construct_gene_exp$exec <- "construct_gene_exp_exec"
 construct_gene_exp$args <- vector(mode="list", length=3)
 names(construct_gene_exp$args) <- c("exp_file", "log_scale", "normalize")
 construct_gene_exp$args$file <- list(name="file", description="tsv file", type="file", required=TRUE)
-construct_gene_exp$args$log_scale <-list(name="log_scale", description"we can do log_scale for you", type="boolean", required=FALSE)
-construct_gene_exp$args$log_scale <-list(name="normalize", description"we can do quantile normalization for you", type="boolean", required=FALSE)
+construct_gene_exp$args$log_scale <-list(name="log_scale", description="we can do log_scale for you", type="boolean", required=FALSE)
+construct_gene_exp$args$log_scale <-list(name="normalize", description="we can do quantile normalization for you", type="boolean", required=FALSE)
 
 
 HeatMap <- setRefClass(
