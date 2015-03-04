@@ -4,3 +4,4 @@ frontend/vendor/*
 node_modules/
 static/
 settings/local_settings.py
+*~
