@@ -1,3 +1,4 @@
+library(preprocessCore)
 allowed_data_sets = c("gene_exp_data_set")
 
 showKnit <- function(obj) {
@@ -7,11 +8,15 @@ showKnit <- function(obj) {
 GeneExpressionDataSet <- setRefClass(
 	"GeneExpressionDataSet",
 	fields = list(
-		exp = "matrix"
+		exp = "matrix",
+        log_scale = "boolean",
+        normalize = "boolean"
 	),
 	methods = list(
-		initialize = function(exp) {
+		initialize = function(exp, log_scale, normalize) {
 			exp <<- exp
+            log_scale <<- log_scale
+            normalize <<- normalize
 		},
 		showKnit = function() {
 			library(knitr)
@@ -21,6 +26,10 @@ GeneExpressionDataSet <- setRefClass(
 		        "<!--rinline nrow(exp) -->",
 			"raws, featuring this genes",
 			"<!--rinline colnames(exp) -->",
+            "Dataset log-scaled",
+            "<!--rinline log_scale -->",
+            "Dataset normalized",
+            "<!--rinline normalize -->",
 		        "</div>")
 			string = paste(strings, collapse="")
 			val = knit2html(text=string, fragment.only=TRUE)
@@ -37,16 +46,55 @@ gene_exp_data_set$constructor <- "construct_gene_exp"
 gene_exp_data_set$methods <- c("construct_heat_map")
 
 
-construct_gene_exp_exec <- function(file) {
-	exp <- as.matrix(read.table(file, header=1, row.names=1))
-	GeneExpressionDataSet(exp)
+configure_construct_gene_exp_exec <- function(exp_file) {
+    exp <- as.matrix(read.table(exp_file, header=1, row.names=1))
+    ans <- vector(mode="list", length=2)
+    names(ans) <- c("log_scale", "normalize")
+    
+    diff <- max(exp) - min(exp)
+    if ((diff < 1) || (diff > 30)) {
+        ans$log_scale = TRUE
+    } else {
+        ans$log_scale = FALSE
+    }
+
+    exp.sorted <- apply(exp, 2, sort, decreasing=F)
+    exp.sorted.norm <- normalize.quantiles(exp.sorted)
+    mean_before = mean(apply(exp.sorted, 1, sd))
+    mean_after = mean(apply(exp.sorted.norm, 1, sd))
+    if (mean_before / mean_after > 10) {
+        ans$normalize = TRUE
+    } else {
+        ans$normalize = FALSE
+    }
+    ans
 }
+
+construct_gene_exp_exec <- function(exp_file, log_scale=NULL, normalize=NULL) {
+	prediction <- configure_construct_gene_exp_exec(exp_file)
+    if (!is.null(log_scale) && !(log_scale == prediction$log_scale) print("wrong prediction log_scale") #SOME LOGGING HERE
+    if (is.null(log_scale) log_scale = prediction$log_scale
+    if (!is.null(normalize) && !(normalize == prediction$normalize) print("wrong prediction normalize") #SOME LOGGING HERE
+    if (is.null(normalize) normalize = prediction$normalize   
+
+    exp <- as.matrix(read.table(file, header=1, row.names=1))
+    if (log_scale) {
+        exp <- log2(exp + 1)
+    }
+    if (normalize) {
+        exp <- normalize.quantiles(exp)
+    }
+	GeneExpressionDataSet(exp, log_scale, normalize)
+}
+
 construct_gene_exp <- vector(mode="list", length=2)
 names(construct_gene_exp) <- c("exec", "args")
 construct_gene_exp$exec <- "construct_gene_exp_exec"
-construct_gene_exp$args <- vector(mode="list", length=1)
-names(construct_gene_exp$args) <- c("file")
+construct_gene_exp$args <- vector(mode="list", length=3)
+names(construct_gene_exp$args) <- c("exp_file", "log_scale", "normalize")
 construct_gene_exp$args$file <- list(name="file", description="tsv file", type="file", required=TRUE)
+construct_gene_exp$args$log_scale <-list(name="log_scale", description"we can do log_scale for you", type="boolean", required=FALSE)
+construct_gene_exp$args$log_scale <-list(name="normalize", description"we can do quantile normalization for you", type="boolean", required=FALSE)
 
 
 HeatMap <- setRefClass(
@@ -84,10 +132,8 @@ tScore <- function(x) {
     return(res)
 }
 
-construct_heat_map_exec <- function(dataset, n=10000, k=5) {
-	library(preprocessCore)
-	gene.exp.norm <- normalize.quantiles(log2(dataset$exp + 1))
-	gene.exp.norm <- gene.exp.norm[sample(seq_len(nrow(gene.exp.norm))), ]
+construct_heat_map_exec <- function(dataset, n=10000, k=10) {
+	gene.exp.norm <- gene.exp.norm[sample(seq_len(nrow(dataset$exp))), ]
 	gene.exp.tscore <- tScore(gene.exp.norm)
 
 	gene.exp.mean <- apply(gene.exp.norm, 1, mean)
