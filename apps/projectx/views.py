@@ -43,7 +43,7 @@ class DatasetCreationView(View):
             arguments[key] = request.POST.get(key)
 
         for fl in request.FILES:
-            files[fl] = request.FILES['file']
+            files[fl] = request.FILES[fl]
         print(arguments, files)
         url = url = 'http://%s/ocpu/library/%s/R/%s' % (settings.OPENCPU_DOMAIN, 'GeneExprDataSet', name)
         ocpu_object = make_ocpu_query(url, arguments, files)
