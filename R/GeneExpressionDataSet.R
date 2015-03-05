@@ -148,20 +148,74 @@ tScore <- function(x) {
 
 
 configure_construct_heat_map_exec <- function(dataset) {
-    ans <- vector(mode="list", length=3)
-    names(ans) <- c("annotation", "n", "k")
-	ans$annotation <- colnames(dataset$annotation)[1]
+    ans <- vector(mode="list", length=2)
+    names(ans) <- c("n", "k")
 	ans$n <- 10000
 	ans$k <- 10
 	ans
+}
+
+check_in_cluster <- function(clustering, str, i) {
+	left = FALSE
+	if (clustering$merge[i, 1] < 0) {
+		left = (str == clustering$labels[-clustering$merge[i, 1]])
+	} else {
+		left = check_in_cluster(clustering, str, clustering$merge[i, 1])
+	}
+	right = FALSE
+	if (clustering$merge[i, 2] < 0) {
+		right = (str == clustering$labels[-clustering$merge[i, 2]])
+	} else {
+		right = check_in_cluster(clustering, str, clustering$merge[i, 2])
+	}
+	return(left || right)
+}
+
+
+annotation_is_good <-function(data, annotation) {
+	mat = t(data)
+	d = dist(mat, method="euclidean")
+	clustering = hclust(d, method="complete")
+	groups = unique(annotation)
+	good = TRUE
+	for (i in nrow(groups)) {
+		bad = TRUE
+		group = groups[i, 1]
+		anno_name = colnames(annotation)[1]
+		seqs = annotation[annotation[, anno_name]==group, ,drop=FALSE]
+		for (cluster in 1:nrow(clustering$merge)) {
+			cluster_exists = TRUE
+			for (seq in rownames(annotation)) {
+				if ((seq %in% rownames(seqs)) != check_in_cluster(clustering, seq, cluster)) {
+					cluster_exists = FALSE
+				}
+			}
+			if (cluster_exists) bad = FALSE
+		}
+		if (bad) {
+			good = FALSE
+		}	
+	}
+	return(good)
+}
+
+сonfigure_heat_map_annotation <- function(data, annotation) {
+	good = NULL
+	for (name in colnames(annotation)) {
+		annotation_frame = subset(annotation, select=c(name))
+		if (annotation_is_good(data, annotation_frame)) {
+			good = name
+			print(name)
+		}
+	}
+	if (is.null(good)) good = colnames(annotation)[1]
+	return(good)
 }
 
 construct_heat_map_exec <- function(dataset, annotation=NULL, n=NULL, k=NULL) {
     library(preprocessCore)
 	
 	prediction <- configure_construct_heat_map_exec(dataset)
-	if (!is.null(annotation) && !(annotation == prediction$annotation)) print("wrong prediction annotaion") #SOME LOGGING HERE
-    if (is.null(annotation)) annotation = prediction$annotation
     if (!is.null(n) && !(n == prediction$n)) print("wrong prediction n") #SOME LOGGING HERE
     if (is.null(n)) n = prediction$n
 	if (!is.null(k) && !(n == prediction$k)) print("wrong prediction k") #SOME LOGGING HERE
@@ -175,7 +229,9 @@ construct_heat_map_exec <- function(dataset, annotation=NULL, n=NULL, k=NULL) {
 
 	km <- kmeans(gene.exp.top, k)
 	gene.exp.top <- gene.exp.top[order(km$cluster), ]
-	annotation_frame = subset(dataset$annotation, select=c(annotation))
+
+	annotation_prediction = сonfigure_heat_map_annotation(gene.exp.top, dataset$annotation)
+	annotation_frame = subset(dataset$annotation, select=c(annotation_prediction))
 	HeatMap(gene.exp.top, annotation_frame)
 }
 
