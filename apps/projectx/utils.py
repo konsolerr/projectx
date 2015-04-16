@@ -16,10 +16,22 @@ def make_query(library, fun, *args, **kwargs):
     response = requests.post(url, data=kwargs)
     return parse_response(response.text)
 
-def make_data_query(library, data, *args, **kwargs):
+
+def make_data_query_get(library, data, *args, **kwargs):
     url = 'http://%s/ocpu/library/%s/data/%s/json' % (settings.OPENCPU_DOMAIN, library, data)
     response = requests.get(url)
     return response.json()
+
+
+def make_data_query_post(library, data, *args, **kwargs):
+    url = 'http://%s/ocpu/library/%s/R/%s/json' % (settings.OPENCPU_DOMAIN, library, data)
+    if kwargs:
+        response = requests.post(url, data=kwargs)
+    else:
+        response = requests.post(url, headers={'Content-Type': 'application/json'})
+    print(response.text)
+    return response.json()
+
 
 def parse_response(text):
     lines = text.split("\n")
@@ -36,7 +48,7 @@ def make_ocpu_query(url, data=None, files=None):
 
 
 class OpenCPUSessionObject(object):
-    def __init__(self, key, keys=None, package="testPackage"):
+    def __init__(self, key, keys=None, package="GeneExprDataSet"):
         self.key = key
         if keys is None:
             url = 'http://%s/ocpu/tmp/%s/' % (settings.OPENCPU_DOMAIN, self.key)
@@ -55,6 +67,9 @@ class OpenCPUSessionObject(object):
 
     def show_knit(self):
         return make_query(self.package, 'showKnit', obj=self.key)
+
+    def show_log(self):
+        return make_query(self.package, 'showLog', obj=self.key)
 
     def __str__(self):
         return "%s - %s" % (self.key, str(self.keys))
