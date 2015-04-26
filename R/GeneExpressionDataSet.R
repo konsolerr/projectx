@@ -1,4 +1,4 @@
-allowed_data_sets = c("gene_exp_data_set")
+allowed_data_sets = c("gene_exp_data_set", "diff_exp_data_set")
 
 showKnit <- function(obj) {
 	obj$showKnit()
@@ -6,6 +6,10 @@ showKnit <- function(obj) {
 
 showLog <- function(obj) {
     obj$log
+}
+
+showClass <- function(obj) {
+    class(obj)
 }
 
 add_log <- function(log, to_add) {
@@ -61,13 +65,30 @@ GeneExpressionDataSet <- setRefClass(
             eval(parse(text=to_exec))
 	        HeatMap(data, selected_annotation, add_log(log, to_exec), prediction)
         },
+        differential_expression = function(selected_annotation, state1, state2) {
+            to_exec = c(
+                "library(limma)",
+                definition(selected_annotation), definition(state1), definition(state2),
+                "design <- model.matrix(eval(parse(text=sprintf(\"~0+%s\", selected_annotation))), data=annotation)",
+                "fit <- lmFit(exp, design)",
+                "selected_contrasts <- sprintf(\"%s%s-%s%s\", selected_annotation, state1, selected_annotation, state2)",
+                "eval(parse(text=sprintf(\"make_contrasts <- makeContrasts(%s, levels=design)\", selected_contrasts)))",
+                "fit2 <- contrasts.fit(fit, make_contrasts)",
+                "fit2 <- eBayes(fit2)",
+                "diff_exp <- topTable(fit2, adjust.method=\"BH\", number=Inf)",
+                "write.table(diff_exp, file='diff_expression.tsv', quote=FALSE, sep='\t', col.names = NA)"
+            )
+            code = paste(to_exec, collapse="\n")
+            eval(parse(text=to_exec))
+            DifferentialExpression(diff_exp, add_log(log, code))
+        },
 		showKnit = function() {
 			library(knitr)
 			strings = c(
 			"<div class='r-container'>",
 		        "Current dataset contains",
 		        "<!--rinline nrow(exp) -->",
-			"rows, featuring this samples ",
+			"rows, featuring these samples: ",
 			"<!--rinline colnames(exp) -->",
             "<br>Dataset log-scaled",
             "<!--rinline log_scale -->",
@@ -92,8 +113,8 @@ gene_exp_data_set$constructor <- "construct_gene_exp"
 gene_exp_data_set$methods <- "gene_exp_methods"
 
 gene_exp_methods <- function(dataset) {
-    methods <- vector(mode="list", length=2)
-    names(methods) <- c("heat_map", "redo")
+    methods <- vector(mode="list", length=3)
+    names(methods) <- c("heat_map", "redo", "differential_expression")
 
     methods$heat_map <- vector(mode="list", length=4)
     names(methods$heat_map) <- c("exec", "description", "args", "modificator")
@@ -152,6 +173,30 @@ gene_exp_methods <- function(dataset) {
         default=dataset$normalize,
         required=TRUE
     )
+
+    methods$differential_expression <- vector(mode="list", length=4)
+    names(methods$differential_expression) <- c("exec", "description", "args", "modificator")
+    methods$differential_expression$exec = "gene_exp_differential_expression"
+    methods$differential_expression$description = "Build differential expression"
+    methods$differential_expression$modificator = TRUE
+    methods$differential_expression$args <- vector(mode="list", length=3)
+    names(methods$differential_expression$args) <- c("selected_annotation", "state1", "state2")
+    methods$differential_expression$args$selected_annotation <- list(
+        name="selected_annotation", description="Annotation",
+        type="character",
+        required=TRUE
+    )
+    methods$differential_expression$args$state1 <- list(
+        name="state1", description="state1",
+        type="character",
+        required=TRUE
+    )
+    methods$differential_expression$args$state2 <- list(
+        name="state2", description="state2",
+        type="character",
+        required=TRUE
+    )
+
     methods
 }
 
@@ -161,6 +206,10 @@ gene_exp_heat_map <- function(dataset, anno, n, k) {
 
 gene_exp_redo <- function(dataset, exp_file, anno_file, log_scale, normalize) {
     dataset$redo(exp_file, anno_file, log_scale, normalize)
+}
+
+gene_exp_differential_expression <- function(dataset, selected_annotation, state1, state2) {
+    dataset$differential_expression(selected_annotation, state1, state2)
 }
 
 
@@ -371,47 +420,109 @@ topk <- function(exp, n, k) {
     gene.exp.top <- gene.exp.top[order(km$cluster), ]
 }
 
-construct_heat_map_exec <- function(dataset, annotation=NULL, n=NULL, k=NULL) {
-    library(preprocessCore)
-	
-	prediction <- configure_construct_heat_map_exec(dataset)
-    if (!is.null(n) && !(n == prediction$n)) print("wrong prediction n") #SOME LOGGING HERE
-    if (is.null(n)) n = prediction$n
-	if (!is.null(k) && !(n == prediction$k)) print("wrong prediction k") #SOME LOGGING HERE
-    if (is.null(k)) k = prediction$k   
-	
-    to_exec = c(
-        definition(n), definition(k),
-        "gene.exp.norm <- dataset$exp[sample(seq_len(nrow(dataset$exp))), ]",
-        "gene.exp.tscore <- tScore(gene.exp.norm)",
-        "gene.exp.mean <- apply(gene.exp.norm, 1, mean)",
-        "gene.exp.top <- gene.exp.tscore[head(order(gene.exp.mean, decreasing = T), n=n), ]",
-        "km <- kmeans(gene.exp.top, k)",
-        "gene.exp.top <- gene.exp.top[order(km$cluster), ]",
-        "annotation_prediction = configure_heat_map_annotation(gene.exp.top, dataset$annotation)",
-        "annotation_frame = subset(dataset$annotation, select=c(annotation_prediction))"
+
+DifferentialExpression <- setRefClass(
+	"DifferentialExpression",
+	fields = list(
+		diff_exp = "data.frame",
+		log = "character"
+	),
+	methods = list(
+		initialize = function(diff_exp, log) {
+			diff_exp <<- diff_exp
+			log <<- log
+		},
+		showKnit = function() {
+		    library(knitr)
+			strings = c(
+			"<!--begin.rcode",
+			"head(diff_exp, 20)",
+			"end.rcode-->"
+			)
+			string = paste(strings, collapse="\n")
+			val = knit2html(text=string, fragment.only=TRUE)
+			val
+		},
+		topValues = function(n, order_property) {
+		    to_exec = c(
+		        definition(n), definition(order_property),
+		        "stat = head(diff_exp[with(diff_exp, order(eval(parse(text=order_property)))), ], n)"
+		    )
+		    code = paste(to_exec, collapse="\n")
+            eval(parse(text=to_exec))
+            Stat(stat, add_log(log, code))
+
+		},
+
+		perform = function() {
+			head(diff_exp, 20)
+		}
+	)
+)
+
+diff_exp_data_set <- vector(mode="list", length=3)
+names(diff_exp_data_set) <- c("class", "name", "methods")
+diff_exp_data_set$class <- "DifferentialExpression"
+diff_exp_data_set$name  <- "Differential Expression Data Set"
+diff_exp_data_set$methods <- "diff_exp_methods"
+
+diff_exp_methods <- function(dataset) {
+    methods <- vector(mode="list", length=1)
+    names(methods) <- c("topValues")
+
+    methods$topValues <- vector(mode="list", length=4)
+    names(methods$topValues) <- c("exec", "description", "args", "modificator")
+    methods$topValues$exec = "diff_exp_top_values"
+    methods$topValues$description = "Look for top values"
+    methods$topValues$modificator = FALSE
+    methods$topValues$args <- vector(mode="list", length=2)
+    names(methods$topValues$args) <- c("n", "order_property")
+    methods$topValues$args$n <- list(
+        name="n", description="top count",
+        type="integer",
+        default=20,
+        required=TRUE
     )
-	#gene.exp.norm <- dataset$exp[sample(seq_len(nrow(dataset$exp))), ]
-	#gene.exp.tscore <- tScore(gene.exp.norm)
 
-	#gene.exp.mean <- apply(gene.exp.norm, 1, mean)
-	#gene.exp.top <- gene.exp.tscore[head(order(gene.exp.mean, decreasing = T), n=n), ]
+    cnames = colnames(dataset$diff_exp)
+    choices = c(Map((function(x) paste(c("+"), x, sep="")), cnames), Map((function(x) paste(c("-"), x, sep="")), cnames))
+    choices = as.character(choices)
 
-	#km <- kmeans(gene.exp.top, k)
-	#gene.exp.top <- gene.exp.top[order(km$cluster), ]
-
-	#annotation_prediction = сonfigure_heat_map_annotation(gene.exp.top, dataset$annotation)
-	#annotation_frame = subset(dataset$annotation, select=c(annotation_prediction))
-    eval(parse(text=to_exec))
-	HeatMap(gene.exp.top, annotation_frame, add_log(dataset$log, to_exec), prediction)
+    methods$topValues$args$order_property <- list(
+        name="order_property", description="column to order",
+        type="select",
+        choices=choices,
+        default=choices[1],
+        required=TRUE
+    )
+    methods
 }
 
-construct_heat_map <- vector(mode="list", length=2)
-names(construct_heat_map) <- c("exec", "args")
-construct_heat_map$exec <- "construct_heat_map_exec"
-construct_heat_map$args <- vector(mode="list", length=4)
-names(construct_heat_map$args) <- c("dataset", "annotation", "n", "k")
-construct_heat_map$args$dataset <- list(name="dataset", description="dataset", type="dataset", required=TRUE)
-construct_heat_map$args$annotation <- list(name="annotation", description="annotation", type="character", required=FALSE)
-construct_heat_map$args$n <- list(name="n", description="top count", type="number", required=FALSE, default=10000)
-construct_heat_map$args$k <- list(name="k", description="kmean dimension", type="number", required=FALSE, default=5)
+diff_exp_top_values <- function (dataset, n, order_property) {
+    dataset$topValues(n, order_property)
+}
+
+Stat <- setRefClass(
+	"Stat",
+	fields = list(
+		stat = "data.frame",
+		log = "character"
+	),
+	methods = list(
+		initialize = function(stat, log) {
+			stat <<- stat
+			log <<- add_log(log, "stat")
+		},
+		showKnit = function() {
+		    library(knitr)
+			strings = c(
+			"<!--begin.rcode",
+			"stat",
+			"end.rcode-->"
+			)
+			string = paste(strings, collapse="\n")
+			val = knit2html(text=string, fragment.only=TRUE)
+			val
+		}
+	)
+)

@@ -19,6 +19,7 @@ def make_query(library, fun, *args, **kwargs):
 
 def make_data_query_get(library, data, *args, **kwargs):
     url = 'http://%s/ocpu/library/%s/data/%s/json' % (settings.OPENCPU_DOMAIN, library, data)
+    print(data)
     response = requests.get(url)
     return response.json()
 
@@ -70,6 +71,14 @@ class OpenCPUSessionObject(object):
 
     def show_log(self):
         return make_query(self.package, 'showLog', obj=self.key)
+
+    def show_class_name(self):
+        return make_query(self.package, 'showClass', obj=self.key)
+
+    def file_names(self):
+        file_keys = filter(lambda x: x.startswith("files/") and "DESCRIPTION" not in x, self.keys)
+        file_names = list(map(lambda x: x[6:], file_keys))
+        return file_names
 
     def __str__(self):
         return "%s - %s" % (self.key, str(self.keys))
