@@ -66,6 +66,8 @@ GeneExpressionDataSet <- setRefClass(
 	        HeatMap(data, selected_annotation, add_log(log, to_exec), prediction)
         },
         differential_expression = function(selected_annotation, state1, state2) {
+            state1 = strsplit(state1, " ")[[1]][3]
+            state2 = strsplit(state2, " ")[[1]][3]
             to_exec = c(
                 "library(limma)",
                 definition(selected_annotation), definition(state1), definition(state2),
@@ -183,17 +185,33 @@ gene_exp_methods <- function(dataset) {
     names(methods$differential_expression$args) <- c("selected_annotation", "state1", "state2")
     methods$differential_expression$args$selected_annotation <- list(
         name="selected_annotation", description="Annotation",
-        type="character",
+        type="select",
+        choices=colnames(dataset$annotation),
+        default=annotation_prediction,
         required=TRUE
     )
+
+    cnames = colnames(dataset$annotation)
+
+    res = c()
+    for (name in cnames) {
+        uniques = unname(as.list(unique(subset(dataset$annotation, select=c(name)))))
+        choices = Map((function(x) paste(c(paste(name, ":")), x, sep=" ")), uniques)
+        res = c(res, choices, recursive=TRUE)
+    }
+
+
+
     methods$differential_expression$args$state1 <- list(
         name="state1", description="state1",
-        type="character",
+        type="select",
+        choices=res,
         required=TRUE
     )
     methods$differential_expression$args$state2 <- list(
         name="state2", description="state2",
-        type="character",
+        type="select",
+        choices=res,
         required=TRUE
     )
 
@@ -434,6 +452,7 @@ DifferentialExpression <- setRefClass(
 		},
 		showKnit = function() {
 		    library(knitr)
+		    opts_knit$set(width=120)
 			strings = c(
 			"<!--begin.rcode",
 			"head(diff_exp, 20)",
@@ -453,7 +472,16 @@ DifferentialExpression <- setRefClass(
             Stat(stat, add_log(log, code))
 
 		},
-
+        getEntrezNames = function() {
+            to_exec = c(
+                "library(data.table)",
+                "load(system.file(\"reflink.rda\", package=\"GeneExprDataSet\"))",
+                "diff_exp$symbol <- reflink[match(rownames(diff_exp), reflink$Entrez), \"symbol\"]"
+            )
+            code = paste(to_exec, collapse="\n")
+            eval(parse(text=code))
+            DifferentialExpression(diff_exp, add_log(log, code))
+        },
 		perform = function() {
 			head(diff_exp, 20)
 		}
@@ -467,8 +495,8 @@ diff_exp_data_set$name  <- "Differential Expression Data Set"
 diff_exp_data_set$methods <- "diff_exp_methods"
 
 diff_exp_methods <- function(dataset) {
-    methods <- vector(mode="list", length=1)
-    names(methods) <- c("topValues")
+    methods <- vector(mode="list", length=2)
+    names(methods) <- c("topValues", "getEntrezNames")
 
     methods$topValues <- vector(mode="list", length=4)
     names(methods$topValues) <- c("exec", "description", "args", "modificator")
@@ -495,7 +523,19 @@ diff_exp_methods <- function(dataset) {
         default=choices[1],
         required=TRUE
     )
+
+    methods$getEntrezNames <- vector(mode="list", length=4)
+    names(methods$getEntrezNames) <- c("exec", "description", "args", "modificator")
+    methods$getEntrezNames$exec = "diff_exp_get_entrez"
+    methods$getEntrezNames$description = "Get Entrez annotation"
+    methods$getEntrezNames$modificator = TRUE
+    methods$getEntrezNames$args <- vector(mode="list", length=0)
+
     methods
+}
+
+diff_exp_get_entrez <- function (dataset) {
+    dataset$getEntrezNames()
 }
 
 diff_exp_top_values <- function (dataset, n, order_property) {

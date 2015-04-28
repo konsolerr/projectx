@@ -67,6 +67,7 @@ angular.module('projectx').controller(
                 function(data2){
                     data.methods = data2;
                     $scope.datas.push(data);
+                    console.log(data2);
                 }
             );
         };
