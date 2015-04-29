@@ -86,6 +86,7 @@ GeneExpressionDataSet <- setRefClass(
         },
 		showKnit = function() {
 			library(knitr)
+			opts_knit$set(width=120)
 			strings = c(
 			"<div class='r-container'>",
 		        "Current dataset contains",
@@ -555,6 +556,7 @@ Stat <- setRefClass(
 		},
 		showKnit = function() {
 		    library(knitr)
+		    opts_knit$set(width=120)
 			strings = c(
 			"<!--begin.rcode",
 			"stat",
