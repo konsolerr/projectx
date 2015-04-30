@@ -8,6 +8,10 @@ showLog <- function(obj) {
     obj$log
 }
 
+showName <- function(obj) {
+    obj$name
+}
+
 showClass <- function(obj) {
     class(obj)
 }
@@ -32,16 +36,18 @@ GeneExpressionDataSet <- setRefClass(
         log_scale = "logical",
         normalize = "logical",
         log = "character",
-        prediction = "list"
+        prediction = "list",
+        name = "character"
 	),
 	methods = list(
-		initialize = function(exp, annotation, log_scale, normalize, log, prediction) {
+		initialize = function(exp, annotation, log_scale, normalize, log, prediction, name) {
 			exp <<- exp
 			annotation <<- annotation
             log_scale <<- log_scale
             normalize <<- normalize
             log <<- log
             prediction <<- prediction
+            name <<- name
 		},
         heat_map = function(anno, n=NULL, k=NULL) {
             library(preprocessCore)
@@ -82,7 +88,8 @@ GeneExpressionDataSet <- setRefClass(
             )
             code = paste(to_exec, collapse="\n")
             eval(parse(text=to_exec))
-            DifferentialExpression(diff_exp, add_log(log, code))
+            name = sprintf("Differential Expression Data Set %s at %s", selected_contrasts, Sys.time())
+            DifferentialExpression(diff_exp, add_log(log, code), name)
         },
 		showKnit = function() {
 			library(knitr)
@@ -285,9 +292,10 @@ build_gene_exp <- function(prediction, exp_file, anno_file, log_scale=NULL, norm
             "exp <- exp.norm"
         )
     }
+    name = sprintf("Gene Expression Data Set %s / %s at %s", exp_file, anno_file, Sys.time())
     code = paste(to_exec, collapse="\n")
     eval(parse(text=code))
-	GeneExpressionDataSet(exp, annotation, log_scale, normalize, code, prediction)
+	GeneExpressionDataSet(exp, annotation, log_scale, normalize, code, prediction, name)
 }
 
 construct_gene_exp_exec <- function(exp_file, anno_file) {
@@ -444,12 +452,14 @@ DifferentialExpression <- setRefClass(
 	"DifferentialExpression",
 	fields = list(
 		diff_exp = "data.frame",
-		log = "character"
+		log = "character",
+		name = "character"
 	),
 	methods = list(
-		initialize = function(diff_exp, log) {
+		initialize = function(diff_exp, log, name) {
 			diff_exp <<- diff_exp
 			log <<- log
+			name <<- name
 		},
 		showKnit = function() {
 		    library(knitr)

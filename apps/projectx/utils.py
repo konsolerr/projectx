@@ -75,6 +75,9 @@ class OpenCPUSessionObject(object):
     def show_class_name(self):
         return make_query(self.package, 'showClass', obj=self.key)
 
+    def show_name(self):
+        return make_query(self.package, 'showName', obj=self.key)
+
     def file_names(self):
         file_keys = filter(lambda x: x.startswith("files/") and "DESCRIPTION" not in x, self.keys)
         file_names = list(map(lambda x: x[6:], file_keys))

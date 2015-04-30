@@ -12,11 +12,13 @@ def ocpu_response(ocpu_object):
     code = None
     class_name = None
     file_names = None
+    name = None
     try:
         html = ocpu_object.show_knit().get_value()
         code = ocpu_object.show_log().get_value()
         class_name = ocpu_object.show_class_name().get_value()
         file_names = ocpu_object.file_names()
+        name = ocpu_object.show_name().get_value()
     except:
         pass
     data = {
@@ -24,6 +26,7 @@ def ocpu_response(ocpu_object):
         'html': html,
         'keys': ocpu_object.show_knit().keys,
         'code': code,
+        'name': name,
         'className': class_name,
         'file_names': file_names
     }

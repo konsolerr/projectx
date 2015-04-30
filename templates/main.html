@@ -23,7 +23,7 @@ Let's call it main
     <li role="presentation" ng-repeat="data in datas">
         <a href="#{[data.key]}" aria-controls="{[data.key]}" role="tab"
          data-toggle="tab" ng-click="changeActive($index)">
-        {[data.dataset.name[0]]} - {[ data.key ]}
+        {[data.name[0]]}
         </a>
     </li>
     <li role="presentation" class="active"><a href="#new_dataset" aria-controls="home" role="tab" data-toggle="tab">Add New</a></li>
@@ -136,7 +136,15 @@ Let's call it main
         </form>
     </div>
   </div>
-
+<div class="modal fade" id="waitModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-body">
+        <h2>Please wait <span class="glyphicon glyphicon-refresh spin"></span></h2>
+      </div>
+    </div>
+  </div>
+</div>
 </div>
 </div>
 {% endblock %}

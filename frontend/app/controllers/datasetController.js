@@ -68,14 +68,14 @@ angular.module('projectx').controller(
                     data.methods = data2;
                     $scope.datas.push(data);
                     console.log(data2);
+                    $scope.notBusy();
                 }
             );
         };
 
         $scope.create_dataset = function() {
+            $scope.busy();
             console.log($scope.datasets);
-//            console.log($scope.current_dataset_creation);
-//            console.log($scope.creation_form);
             var fd = new FormData();
             var args = $scope.current_dataset_creation.real_constructor.args;
             for (var arg in args) {
@@ -109,10 +109,9 @@ angular.module('projectx').controller(
         };
 
         $scope.submit_action = function(data, name) {
-            console.log(name);
+            $scope.busy();
             var method = data.methods[name];
-            console.log(method);
-            
+
             var fd = new FormData();
             var args = method.args;
             for (var arg in args) {
@@ -145,7 +144,6 @@ angular.module('projectx').controller(
 
             }
             fd.append('dataset', data.key);
-            console.log(fd);
             $http.post('/projectx/create/' + method.exec[0] + '/', fd, {
               headers: { 'Content-Type': undefined },
               transformRequest: angular.identity
@@ -156,6 +154,7 @@ angular.module('projectx').controller(
                     console.log(data2);
                     data2.html = $sce.trustAsHtml(data2['html'][0]);
                     data.results.push(data2);
+                    $scope.notBusy();
                 }
             });
             
@@ -163,6 +162,17 @@ angular.module('projectx').controller(
 
         $scope.constructorFilter = function(value) {
             return _.has($scope.datasets[value], "constructor");
+        };
+
+        $scope.busy = function () {
+            $('#waitModal').modal({
+                backdrop: 'static',
+                keyboard: false
+            })
+        };
+
+        $scope.notBusy = function () {
+            $("#waitModal").modal("hide");
         }
-        
+
 });
