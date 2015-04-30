@@ -85,7 +85,7 @@ GeneExpressionDataSet <- setRefClass(
             DifferentialExpression(diff_exp, add_log(log, code))
         },
 		showKnit = function() {
-			library(knitr)
+			require(knitr)
 			opts_knit$set(width=120)
 			strings = c(
 			"<div class='r-container'>",
@@ -334,7 +334,7 @@ HeatMap <- setRefClass(
             prediction <<- prediction
 		},
 		showKnit = function() {
-			library(knitr)
+			require(knitr)
 			library(pheatmap)
 			strings = c(
 			"<!--begin.rcode",
@@ -452,7 +452,7 @@ DifferentialExpression <- setRefClass(
 			log <<- log
 		},
 		showKnit = function() {
-		    library(knitr)
+		    require(knitr)
 		    opts_knit$set(width=120)
 			strings = c(
 			"<!--begin.rcode",
@@ -555,7 +555,7 @@ Stat <- setRefClass(
 			log <<- add_log(log, "stat")
 		},
 		showKnit = function() {
-		    library(knitr)
+		    require(knitr)
 		    opts_knit$set(width=120)
 			strings = c(
 			"<!--begin.rcode",
