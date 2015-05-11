@@ -3,14 +3,6 @@ import json
 from django.conf import settings
 
 
-def make_json_query(library, fun, *args, **kwargs):
-    data = json.dumps(kwargs)
-    url = 'http://%s/ocpu/library/%s/R/%s/json' % (settings.OPENCPU_DOMAIN, library, fun)
-    response = requests.post(url, data=data, headers={'Content-Type': 'application/json'})
-    print(response.text)
-    return response.json()
-
-
 def make_query(library, fun, *args, **kwargs):
     url = 'http://%s/ocpu/library/%s/R/%s' % (settings.OPENCPU_DOMAIN, library, fun)
     response = requests.post(url, data=kwargs)
@@ -19,7 +11,6 @@ def make_query(library, fun, *args, **kwargs):
 
 def make_data_query_get(library, data, *args, **kwargs):
     url = 'http://%s/ocpu/library/%s/data/%s/json' % (settings.OPENCPU_DOMAIN, library, data)
-    print(data)
     response = requests.get(url)
     return response.json()
 
@@ -30,7 +21,6 @@ def make_data_query_post(library, data, *args, **kwargs):
         response = requests.post(url, data=kwargs)
     else:
         response = requests.post(url, headers={'Content-Type': 'application/json'})
-    print(response.text)
     return response.json()
 
 
@@ -57,6 +47,7 @@ class OpenCPUSessionObject(object):
             keys = filter(lambda x: x, lines)
         self.keys = keys
         self.package = package
+        self.meta = make_data_query_post(self.package, 'showMeta', obj=self.key)
 
     def get_value(self):
         val_string = 'R/.val'
@@ -65,18 +56,6 @@ class OpenCPUSessionObject(object):
         url = ('http://%s/ocpu/tmp/%s/' + val_string + '/json') % (settings.OPENCPU_DOMAIN, self.key)
         response = requests.get(url, headers={'Content-Type': 'application/json'})
         return response.json()
-
-    def show_knit(self):
-        return make_query(self.package, 'showKnit', obj=self.key)
-
-    def show_log(self):
-        return make_query(self.package, 'showLog', obj=self.key)
-
-    def show_class_name(self):
-        return make_query(self.package, 'showClass', obj=self.key)
-
-    def show_name(self):
-        return make_query(self.package, 'showName', obj=self.key)
 
     def file_names(self):
         file_keys = filter(lambda x: x.startswith("files/") and "DESCRIPTION" not in x, self.keys)

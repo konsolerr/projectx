@@ -1,19 +1,7 @@
 allowed_data_sets = c("gene_exp_data_set", "diff_exp_data_set")
 
-showKnit <- function(obj) {
-	obj$showKnit()
-}
-
-showLog <- function(obj) {
-    obj$log
-}
-
-showName <- function(obj) {
-    obj$name
-}
-
-showClass <- function(obj) {
-    class(obj)
+showMeta <- function(obj) {
+    list(html=obj$showKnit(), log=obj$log, name=if (exists("name", where=obj)) obj$name else "nop", class=class(obj))
 }
 
 add_log <- function(log, to_add) {
@@ -491,7 +479,7 @@ DifferentialExpression <- setRefClass(
             )
             code = paste(to_exec, collapse="\n")
             eval(parse(text=code))
-            DifferentialExpression(diff_exp, add_log(log, code))
+            DifferentialExpression(diff_exp, add_log(log, code), paste(name, "Entrez"))
         },
 		perform = function() {
 			head(diff_exp, 20)

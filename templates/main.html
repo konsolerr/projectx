@@ -23,7 +23,7 @@ Let's call it main
     <li role="presentation" ng-repeat="data in datas">
         <a href="#{[data.key]}" aria-controls="{[data.key]}" role="tab"
          data-toggle="tab" ng-click="changeActive($index)">
-        {[data.name[0]]}
+        {[data.name]}
         </a>
     </li>
     <li role="presentation" class="active"><a href="#new_dataset" aria-controls="home" role="tab" data-toggle="tab">Add New</a></li>
@@ -46,7 +46,7 @@ Let's call it main
             </div>
         </div>
         <div class="collapse" id="code-{[data.key]}">
-          <pre><code class="r">{[data.code[0]]}</code></pre>
+          <pre><code class="r">{[data.code]}</code></pre>
         </div>
         <br>
         <br>
@@ -105,7 +105,7 @@ Let's call it main
               Show the code
             </button>
             <div class="collapse" id="code-{[result.key]}">
-              <pre><code class="r">{[result.code[0]]}</code></pre>
+              <pre><code class="r">{[result.code]}</code></pre>
             </div>
         </div>
 

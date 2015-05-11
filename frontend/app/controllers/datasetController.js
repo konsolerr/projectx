@@ -16,7 +16,6 @@ angular.module('projectx').controller(
         
         $http.get('/projectx/data/get/allowed_data_sets/').success(function(data) {
             $scope.allowed_datasets = data;
-            console.log(data);
         }).then(function() {
             var promises = [];
             for (var i = 0; i < $scope.allowed_datasets.length; i++) {
@@ -59,15 +58,13 @@ angular.module('projectx').controller(
         };
 
         $scope.add_data = function(data) {
-            console.log(data);
-            data.dataset  = _.find($scope.datasets, function(x) { return x['class'] == data.className[0] });
-            data.html = $sce.trustAsHtml(data['html'][0]);
+            data.dataset  = _.find($scope.datasets, function(x) { return x['class'] == data.className });
+            data.html = $sce.trustAsHtml(data['html']);
             data.results = [];
             $http.get('/projectx/data/post/' + data.dataset.methods[0] + '/' + data.key + '/').success(
                 function(data2){
                     data.methods = data2;
                     $scope.datas.push(data);
-                    console.log(data2);
                     $scope.notBusy();
                 }
             );
@@ -75,7 +72,6 @@ angular.module('projectx').controller(
 
         $scope.create_dataset = function() {
             $scope.busy();
-            console.log($scope.datasets);
             var fd = new FormData();
             var args = $scope.current_dataset_creation.real_constructor.args;
             for (var arg in args) {
@@ -86,7 +82,6 @@ angular.module('projectx').controller(
                     }
                 }
             }
-            console.log(fd);
             $http.post('/projectx/create/' + $scope.current_dataset_creation.real_constructor.exec + '/', fd, {
               headers: { 'Content-Type': undefined },
               transformRequest: angular.identity
@@ -151,8 +146,7 @@ angular.module('projectx').controller(
                 if (method.modificator[0]) {
                     $scope.add_data(data2);
                 } else {
-                    console.log(data2);
-                    data2.html = $sce.trustAsHtml(data2['html'][0]);
+                    data2.html = $sce.trustAsHtml(data2['html']);
                     data.results.push(data2);
                     $scope.notBusy();
                 }
